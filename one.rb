@@ -1,6 +1,9 @@
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
+$LOAD_PATH.unshift(File.dirname(__FILE__))
+require 'wordnik'
+
 class RubyDictionary
   attr_accessor :word
-  # Create the object
   def initialize(word = "default")
     @word = word
   end
@@ -29,7 +32,7 @@ class RubyDictionary
     @word = word
     puts "getting allInfo #{word} from wordnik"
     puts "allInfo of #{word} is ...!"
-    ends
+    end
 
   def wordOfDay
     puts "getting word of day"
@@ -48,8 +51,14 @@ class RubyDictionary
 
 end
 
+
+wordnik = Wordnik.new
+definitions = wordnik.define('simple')
+
+puts "got from wordnik #{definitions}"
+
 dict = RubyDictionary.new(ARGV[1])
-#ARGV[1] is null then goto allInfo //todo
+
 
 case ARGV[0]
 when "def"
@@ -69,4 +78,3 @@ when nil
 else
   dict.allInfo(ARGV[0])
 end
-
