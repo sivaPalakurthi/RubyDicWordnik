@@ -21,18 +21,26 @@ class RubyDictionary
   end
 
   def synonyms
-    #    return Wordnik.word.get_related(@word, :type => 'synonym')
-    return "Synonym #{word}"
+    parsed =  Wordnik.word.get_related(@word, :type => 'synonym')
+    parsed.each do |res|
+      tempWord = res['words']
+      puts "#{tempWord}"
+    end
   end
 
   def antonyms
-    #    return Wordnik.word.get_related(@word, :type => 'hypernym', :use_canonical => true)
-    return "antonym #{word}"
+    parsed =  Wordnik.word.get_related_words(@word, :useCanonical => 'true', :relationshipTypes => 'antonym')
+    parsed.each do |res|
+      tempWord = res['words']
+      puts "#{tempWord}"
+    end
   end
 
   def examples
-    #return Wordnik.word.get_examples(@word, :limit => 10, :skip => 10)
-    return "sample sentence with  #{word}"
+    parsed = Wordnik.word.get_examples(@word, :limit => 10, :skip => 10)
+    parsed['examples'].each do |res|
+      puts "#{res['text']}"
+    end
   end
 
   def allInfo(word = @word)
@@ -43,8 +51,8 @@ class RubyDictionary
 
   def wordOfDay
     todaysDate = Time.now.strftime("%Y-%m-%d")
-    puts "#{todaysDate}"
-    #Wordnik.words.get_word_of_the_day(:date => todaysDate)
+    parsed = Wordnik.words.get_word_of_the_day(:date => todaysDate)
+    puts "Word of Day #{parsed['word']}"
   end
 
   def wordNotFound
