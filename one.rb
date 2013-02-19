@@ -1,9 +1,10 @@
 require 'rubygems'
 require 'json'
 
+Api_key = '557bea420b5c3daf4d0030a71cc0817242db37d2bc14774a3'
 %w(rubygems wordnik).each {|lib| require lib}
 Wordnik.configure do |config|
-  config.api_key ='557bea420b5c3daf4d0030a71cc0817242db37d2bc14774a3'
+  config.api_key = Api_key
 end
 
 class RubyDictionary
@@ -12,50 +13,48 @@ class RubyDictionary
     @word = word
   end
 
-  def definition
-    parsed =  Wordnik.word.get_definitions(@word)
+  def definition(limit = 3)
+    parsed =  Wordnik.word.get_definitions(@word, :limit => limit)
     parsed.each do |res|
       tempWord = res['text']
-      puts "#{tempWord}"
+      puts "  Def. :   #{tempWord}"
     end
   end
 
-  def synonyms
-    parsed =  Wordnik.word.get_related(@word, :type => 'synonym')
+  def synonyms(limit = 3, print = true)
+    parsed =  Wordnik.word.get_related(@word, :limit => limit, :type => 'synonym')
     parsed.each do |res|
       tempWord = res['words']
-      puts "#{tempWord}"
+      if print == true
+        puts " Synonyms : #{tempWord}"
+      end
       return tempWord
     end
   end
 
-  def antonyms
-    parsed =  Wordnik.word.get_related_words(@word, :useCanonical => 'true', :relationshipTypes => 'antonym')
+  def antonyms(limit = 3)
+    parsed =  Wordnik.word.get_related_words(@word, :limit => limit, :useCanonical => 'true', :relationshipTypes => 'antonym')
     parsed.each do |res|
       tempWord = res['words']
-      puts "#{tempWord}"
+      puts " Anotonym : #{tempWord}"
     end
   end
 
-  def examples
-    parsed = Wordnik.word.get_examples(@word, :limit => 10, :skip => 10)
+  def examples(limit = 3)
+    parsed = Wordnik.word.get_examples(@word, :limit => limit, :skip => 10)
 
     unless parsed['examples'].nil?
       parsed['examples'].each do |res|
-        puts "#{res['text']}"
+        puts " Example:  #{res['text']}"
       end
     end
   end
 
   def allInfo(word = @word)
     @word = word
-    puts " Definition : "
     definition()
-    puts " Synonyms : "
     synonyms()
-    puts " Antonyms : "
     antonyms()
-    puts " Examples : "
     examples()
   end
 
@@ -67,12 +66,25 @@ class RubyDictionary
   end
 
   def wordNotFound
-    parsed = Wordnik.words.search_words(:query => '*#{@word}*',  :allowRegex => 'true', :includePartOfSpeech => 'adjective', :excludePartOfSpeech => 'noun', :min_length => 3, :max_length => 20)
-    parsed['searchResults'].each do |res|
-      count = res['count']
-      tempWord = res['word']
-      if count > 0
-        puts "#{tempWord}"
+    parsed = Wordnik.words.search_words(:query => 'si', :includePartOfSpeech => 'adjective', :excludePartOfSpeech => 'noun', :min_length => 3, :max_length => 20)
+
+#    parsed['searchResults'].each do |res|
+#      count = res['count']
+#      tempWord = res['word']
+#      if count > 0
+#        puts "#{tempWord}"
+#      end
+#    end
+  end
+
+  def removeHintsFromAnswers
+    @hintAnswers.each do |hint|
+      hint.each do |hin|
+        @listAnswers.each do |answer|
+          if answer == hin
+            @listAnswers.delete_at(@listAnswers.index(answer))
+          end
+        end
       end
     end
   end
@@ -80,15 +92,38 @@ class RubyDictionary
   def game
     parsed = Wordnik.words.get_random_word(:hasDictionaryDef => 'true')
     @word = parsed['word']
-    puts "#{word}"
-    syn = synonyms()
-    name=$stdin.read
-#    puts name
-    if name == syn
-      puts "correct"
+    index = 1
+    @hintAnswers = []
+    puts " Guess the word "
+    definition(index)
+    @hintAnswers.push(synonyms(2))
+    @listAnswers = synonyms(50, false)
+    @listAnswers.push(word)
+    removeHintsFromAnswers()
+    #    puts @listAnswers
+    until false do
+      givenAnswer=$stdin.gets.chomp.downcase
+      puts "#{givenAnswer}"
+      @listAnswers.each do |answer|
+        if answer == givenAnswer
+          return
+        end
+      end
+      puts 'Enter 1. Try Again   2. Hint    3. quit'
+      choice = $stdin.gets.chomp
+      if choice == '3'
+        allInfo()
+        return
+      end
+      if choice == '2'
+        index = index + 1
+        @hintAnswers.push(synonyms(index))
+        removeHintsFromAnswers()
+        antonyms(index - 1)
+        definition(index -2)
+      end
     end
   end
-
 end
 
 dict = RubyDictionary.new(ARGV[1])
