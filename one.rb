@@ -25,6 +25,7 @@ class RubyDictionary
     parsed.each do |res|
       tempWord = res['words']
       puts "#{tempWord}"
+      return tempWord
     end
   end
 
@@ -38,25 +39,35 @@ class RubyDictionary
 
   def examples
     parsed = Wordnik.word.get_examples(@word, :limit => 10, :skip => 10)
-    parsed['examples'].each do |res|
-      puts "#{res['text']}"
+
+    unless parsed['examples'].nil?
+      parsed['examples'].each do |res|
+        puts "#{res['text']}"
+      end
     end
   end
 
   def allInfo(word = @word)
     @word = word
-    return "@all info #{word}"
-
+    puts " Definition : "
+    definition()
+    puts " Synonyms : "
+    synonyms()
+    puts " Antonyms : "
+    antonyms()
+    puts " Examples : "
+    examples()
   end
 
   def wordOfDay
     todaysDate = Time.now.strftime("%Y-%m-%d")
     parsed = Wordnik.words.get_word_of_the_day(:date => todaysDate)
+    @word = parsed['word']
     puts "Word of Day #{parsed['word']}"
   end
 
   def wordNotFound
-    parsed = Wordnik.words.search_words(:query => '*#{@word}*', :include_part_of_speech => 'verb', :min_length => 5, :max_length => 20)
+    parsed = Wordnik.words.search_words(:query => '*#{@word}*',  :allowRegex => 'true', :includePartOfSpeech => 'adjective', :excludePartOfSpeech => 'noun', :min_length => 3, :max_length => 20)
     parsed['searchResults'].each do |res|
       count = res['count']
       tempWord = res['word']
@@ -67,8 +78,15 @@ class RubyDictionary
   end
 
   def game
-    puts "getting Similar words for #{word} from wordnik"
-    puts "similar words of #{word} is ...!"
+    parsed = Wordnik.words.get_random_word(:hasDictionaryDef => 'true')
+    @word = parsed['word']
+    puts "#{word}"
+    syn = synonyms()
+    name=$stdin.read
+#    puts name
+    if name == syn
+      puts "correct"
+    end
   end
 
 end
@@ -92,6 +110,7 @@ when 'not'
   dict.wordNotFound()
 when nil
   dict.wordOfDay()
+  dict.allInfo()
 else
   dict.allInfo(ARGV[0])
 end
