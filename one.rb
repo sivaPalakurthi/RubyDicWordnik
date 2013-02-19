@@ -13,46 +13,67 @@ class RubyDictionary
     @word = word
   end
 
-  def definition(limit = 3)
+  def definition(limit = 3, relatedWords = false)
     parsed =  Wordnik.word.get_definitions(@word, :limit => limit)
     parsed.each do |res|
       tempWord = res['text']
-      puts "  Def. :   #{tempWord}"
+      puts "$$ Def. :   #{tempWord}"
+      return
+    end
+    if relatedWords == true
+      puts "==>Word not Found"
+      wordNotFound()
     end
   end
 
-  def synonyms(limit = 3, print = true)
+  def synonyms(limit = 3, print = true, relatedWords = false)
     parsed =  Wordnik.word.get_related(@word, :limit => limit, :type => 'synonym')
     parsed.each do |res|
       tempWord = res['words']
       if print == true
-        puts " Synonyms : #{tempWord}"
+        puts "$$ Synonyms : #{tempWord}"
       end
       return tempWord
     end
+    if relatedWords == true
+      puts "==>Word not Found"
+      wordNotFound()
+    end
+
   end
 
-  def antonyms(limit = 3)
+  def antonyms(limit = 3, relatedWords = false)
     parsed =  Wordnik.word.get_related_words(@word, :limit => limit, :useCanonical => 'true', :relationshipTypes => 'antonym')
     parsed.each do |res|
       tempWord = res['words']
-      puts " Anotonym : #{tempWord}"
+      puts "$$ Anotonym : #{tempWord}"
+      return
     end
+    if relatedWords == true
+      puts "==>Word not Found"
+      wordNotFound()
+    end
+
   end
 
-  def examples(limit = 3)
+  def examples(limit = 3, relatedWords = false)
     parsed = Wordnik.word.get_examples(@word, :limit => limit, :skip => 10)
-
+    found = false
     unless parsed['examples'].nil?
       parsed['examples'].each do |res|
-        puts " Example:  #{res['text']}"
+        found = true
+        puts "$$ Example:  #{res['text']}"
       end
+    end
+    if relatedWords == true && found == false
+      puts "==>Word not Found"
+      wordNotFound()
     end
   end
 
   def allInfo(word = @word)
     @word = word
-    definition()
+    definition(3, true)
     synonyms()
     antonyms()
     examples()
@@ -62,19 +83,22 @@ class RubyDictionary
     todaysDate = Time.now.strftime("%Y-%m-%d")
     parsed = Wordnik.words.get_word_of_the_day(:date => todaysDate)
     @word = parsed['word']
-    puts "Word of Day #{parsed['word']}"
+    puts "$$ Word of Day #{parsed['word']}"
   end
 
-  def wordNotFound
-    parsed = Wordnik.words.search_words(:query => 'si', :includePartOfSpeech => 'adjective', :excludePartOfSpeech => 'noun', :min_length => 3, :max_length => 20)
-
-#    parsed['searchResults'].each do |res|
-#      count = res['count']
-#      tempWord = res['word']
-#      if count > 0
-#        puts "#{tempWord}"
-#      end
-#    end
+  def wordNotFound(limit = 3)
+    var = "Value"
+    reg = "*Value*"
+    reg.gsub!( /#{var}/, @word )
+    parsed = Wordnik.words.search_words(:query => reg, :allowRegex => 'true', :includePartOfSpeech => 'adjective', :excludePartOfSpeech => 'noun', :min_length => 3, :max_length => 20, :limit => limit)
+    puts "$$ Related words: "
+    parsed.each do |res|
+      count = res['count']
+      tempWord = res['wordstring']
+      if count > 0
+        puts "   #{tempWord}"
+      end
+    end
   end
 
   def removeHintsFromAnswers
@@ -94,21 +118,25 @@ class RubyDictionary
     @word = parsed['word']
     index = 1
     @hintAnswers = []
-    puts " Guess the word "
+    @listAnswers = []
+    puts "[Q] Guess the word "
     definition(index)
-    @hintAnswers.push(synonyms(2))
-    @listAnswers = synonyms(50, false)
+    hintAns = synonyms(index, true, false)
+    if !hintAns.nil?
+      @hintAnswers.push(hintAns)
+      @listAnswers = synonyms(50, false, false)
+    end
     @listAnswers.push(word)
     removeHintsFromAnswers()
-    #    puts @listAnswers
     until false do
+      puts "Enter the Guessed word ==>"
       givenAnswer=$stdin.gets.chomp.downcase
-      puts "#{givenAnswer}"
       @listAnswers.each do |answer|
         if answer == givenAnswer
           return
         end
       end
+      puts "Incorrect Answer"
       puts 'Enter 1. Try Again   2. Hint    3. quit'
       choice = $stdin.gets.chomp
       if choice == '3'
@@ -130,19 +158,17 @@ dict = RubyDictionary.new(ARGV[1])
 
 case ARGV[0]
 when "def"
-  dict.definition()
+  dict.definition(3, true)
 when "syn"
-  dict.synonyms()
+  dict.synonyms(3, true, true)
 when "ant"
-  dict.antonyms()
+  dict.antonyms(3, true)
 when "ex"
-  dict.examples()
+  dict.examples(3, true)
 when "dict"
   dict.allInfo()
 when "play"
   dict.game()
-when 'not'
-  dict.wordNotFound()
 when nil
   dict.wordOfDay()
   dict.allInfo()
