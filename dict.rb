@@ -39,7 +39,6 @@ class RubyDictionary
       puts "==>Word not Found"
       wordNotFound()
     end
-
   end
 
   def antonyms(limit = 3, relatedWords = false)
@@ -53,7 +52,6 @@ class RubyDictionary
       puts "==>Word not Found"
       wordNotFound()
     end
-
   end
 
   def examples(limit = 3, relatedWords = false)
@@ -113,6 +111,10 @@ class RubyDictionary
     end
   end
 
+  def string_shuffle(s)
+    return s.split("").shuffle.join
+  end
+
   def game
     parsed = Wordnik.words.get_random_word(:hasDictionaryDef => 'true')
     @word = parsed['word']
@@ -145,10 +147,17 @@ class RubyDictionary
       end
       if choice == '2'
         index = index + 1
-        @hintAnswers.push(synonyms(index))
-        removeHintsFromAnswers()
+        hintAns = synonyms(index)
+        if !hintAns.nil?
+          @hintAnswers.push(hintAns)
+          removeHintsFromAnswers()
+        end
         antonyms(index - 1)
         definition(index -2)
+        if index > 3
+          puts "Hint: Word in Jumbled Order : "
+          puts string_shuffle(@word)
+        end
       end
     end
   end
