@@ -1,3 +1,3 @@
 RubyDicWordnik
 ==============
-Terminal based Word game based on wordnik written in ruby.
+Get synonyms, hypernyms, anotnyms, related words, .... using wordnik api. 
